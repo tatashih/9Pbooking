@@ -127,7 +127,12 @@ function review(code, status){
   if(card){card.querySelectorAll('button').forEach(function(b){b.disabled=true;});
     card.querySelector('.rbtns').innerHTML='<div style="flex:1;text-align:center;color:var(--soft);font-size:13px;padding:8px">處理中…</div>';}
   fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'review',code:code,status:status})})
-    .then(r=>r.json()).then(j=>{ if(j&&j.ok){ load(); } else { alert('更新失敗：'+((j&&j.error)||'未知錯誤')); load(); } })
+    .then(r=>r.json()).then(j=>{
+        if(j&&j.ok){
+          if(!j.notified){ alert((status==='已確認'?'已通過':'已取消')+'。\n這位顧客沒有留 Email，系統無法自動通知，請自行以電話／LINE 告知。'); }
+          load();
+        } else { alert('更新失敗：'+((j&&j.error)||'未知錯誤')); load(); }
+      })
     .catch(function(){ alert('連線失敗，請再試一次。'); load(); });
 }
 
