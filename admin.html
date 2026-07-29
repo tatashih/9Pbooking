@@ -3,28 +3,41 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>九大行星　當日排程（後台）</title>
+<title>九大行星　後台（審核 · 排程）</title>
 <style>
   :root{--bg:#FAF5F1;--card:#FFF;--ink:#3E2A38;--soft:#7A6470;--line:#EADFD8;--rose:#C67F72;--honey:#C99A4E;--ok:#5C9B7A}
   *{box-sizing:border-box;-webkit-text-size-adjust:100%}
   body{margin:0;background:var(--bg);color:var(--ink);font-family:'PingFang TC','Microsoft JhengHei',system-ui,sans-serif}
   .wrap{max-width:960px;margin:0 auto;padding:16px 14px 60px}
-  header{display:flex;align-items:center;gap:9px;padding:6px 0 12px}
+  header{display:flex;align-items:center;gap:9px;padding:6px 0 10px}
   header .dot{width:20px;height:20px;border-radius:6px;background:linear-gradient(135deg,#8E6E9E,#C99A4E)}
   h1{font-size:17px;margin:0;letter-spacing:.5px}
-  .sub{font-size:12.5px;color:var(--soft);margin:-4px 0 12px}
+  .sub{font-size:12.5px;color:var(--soft);margin:-2px 0 12px}
+  .tabs{display:flex;gap:6px;margin-bottom:14px}
+  .tab{border:1px solid var(--line);background:var(--card);color:var(--soft);border-radius:20px;padding:8px 15px;font-size:13px;font-weight:600;cursor:pointer}
+  .tab.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .tab .badge{background:var(--rose);color:#fff;font-size:10px;border-radius:8px;padding:0 6px;margin-left:5px}
   .days{display:flex;gap:8px;overflow-x:auto;padding-bottom:8px;-webkit-overflow-scrolling:touch}
   .day{flex:0 0 auto;border:1px solid var(--line);background:var(--card);border-radius:10px;padding:9px 13px;font-size:12.5px;font-weight:600;cursor:pointer;text-align:center;color:var(--ink)}
   .day.on{background:var(--ink);color:#fff;border-color:var(--ink)}
-  .day .loc{display:flex;align-items:center;gap:4px;justify-content:center;font-size:11px;opacity:.85;margin-bottom:2px}
-  .meta{display:flex;justify-content:space-between;align-items:center;margin:12px 2px 8px}
-  .meta .t{font-weight:700}
-  .meta .c{font-size:12.5px;color:var(--soft)}
+  .day .loc{font-size:11px;opacity:.85;margin-bottom:2px}
+  .rcard{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:10px}
+  .rtop{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+  .rname{font-weight:700;font-size:15px}
+  .rphone{color:var(--soft);font-weight:400;font-size:12.5px;margin-left:6px}
+  .rtag{font-size:11px;border-radius:8px;padding:2px 8px;white-space:nowrap}
+  .rmeta{font-size:13px;color:var(--ink);margin-top:7px;display:flex;flex-wrap:wrap;gap:4px 10px}
+  .rmeta .k{color:var(--soft)}
+  .rbtns{display:flex;gap:8px;margin-top:12px}
+  .b{flex:1;border:none;border-radius:10px;padding:11px;font-weight:700;font-size:13.5px;cursor:pointer}
+  .b.ok{background:var(--ok);color:#fff}
+  .b.no{background:#fff;color:var(--rose);border:1px solid var(--rose)}
+  .b:disabled{opacity:.5;cursor:default}
   .cal{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden}
   .scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
   table{border-collapse:collapse;width:100%;min-width:520px}
   th,td{border:1px solid var(--line);padding:0}
-  thead th{background:#F3EEEA;font-size:12.5px;font-weight:700;padding:9px 8px;position:sticky;top:0}
+  thead th{background:#F3EEEA;font-size:12.5px;font-weight:700;padding:9px 8px}
   .tcol{width:56px;min-width:56px;background:#F3EEEA;color:var(--soft);font-size:11.5px;text-align:center;font-weight:600}
   td.slot{height:34px;vertical-align:top}
   .free{background:repeating-linear-gradient(45deg,transparent,transparent 6px,#FBF7F4 6px,#FBF7F4 12px)}
@@ -33,89 +46,130 @@
   .bk .sv{font-size:11px;color:var(--soft);line-height:1.3;margin-top:1px}
   .bk .tg{display:inline-block;font-size:9.5px;font-weight:600;border-radius:4px;padding:0 4px;margin-top:2px}
   .dotc{width:9px;height:9px;border-radius:5px;display:inline-block;margin-right:5px;vertical-align:middle}
-  .center{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:70px 20px;color:var(--soft)}
+  .meta{display:flex;justify-content:space-between;align-items:center;margin:12px 2px 8px}
+  .meta .t{font-weight:700}.meta .c{font-size:12.5px;color:var(--soft)}
+  .center{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;color:var(--soft)}
   .btn{background:var(--ink);color:#fff;border:none;border-radius:10px;padding:10px 20px;font-weight:600;cursor:pointer}
   .spin{width:22px;height:22px;border:3px solid var(--line);border-top-color:var(--honey);border-radius:50%;animation:s 1s linear infinite}
   @keyframes s{to{transform:rotate(360deg)}}
+  .empty{text-align:center;color:var(--soft);font-size:13px;padding:44px 20px;border:1px dashed var(--line);border-radius:14px}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <header><span class="dot"></span><h1>九大行星　當日排程</h1></header>
-  <div class="sub">後台管理專用 · 選一天看每位老師的整日排班（誰約了什麼）</div>
-  <div id="app"><div class="center"><div class="spin"></div><div style="margin-top:12px;font-size:13px">讀取排程中…</div></div></div>
+  <header><span class="dot"></span><h1>九大行星　後台</h1></header>
+  <div class="sub">後台管理專用 · 審核預約、查看每日排班</div>
+  <div id="app"><div class="center"><div class="spin"></div><div style="margin-top:12px;font-size:13px">讀取中…</div></div></div>
 </div>
 <script>
 const API_URL = "https://script.google.com/macros/s/AKfycbw6SdUrTOwtXfAy7xz77jjQf-Jjol9DBqTQhCYy5rvaywRHrOgEB3J3XbSK3DnUiUVWnw/exec";
 const app = document.getElementById('app');
-let CFG=null, sel=null;
+let CFG=null, view='review', sel=null;
 
 const pad=n=>String(n).padStart(2,'0');
 const m2s=m=>pad(Math.floor(m/60))+':'+pad(m%60);
 const fmtDate=k=>{const d=new Date(k+'T00:00:00');const w=['日','一','二','三','四','五','六'][d.getDay()];return{md:(d.getMonth()+1)+'/'+d.getDate(),w:w};};
-const esc=s=>String(s==null?'':s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
-
-function load(){
-  app.innerHTML='<div class="center"><div class="spin"></div><div style="margin-top:12px;font-size:13px">讀取排程中…</div></div>';
-  fetch(API_URL).then(r=>r.json()).then(j=>{
-    if(j&&j.ok){CFG=j.data; if(!sel&&CFG.openDays.length){sel=CFG.openDays[0].date+'|'+CFG.openDays[0].loc;} render();}
-    else showErr((j&&j.error)||'讀取失敗');
-  }).catch(()=>showErr('連線失敗，請確認 Apps Script 已部署為「所有人」可存取。'));
-}
-function showErr(msg){
-  app.innerHTML='<div class="center"><div style="font-weight:600;color:var(--rose)">載入失敗</div><div style="font-size:12.5px;margin:8px 0 14px;max-width:320px;text-align:center">'+esc(msg)+'</div><button class="btn" onclick="load()">重新載入</button></div>';
-}
-function tMap(){const m={};CFG.teachers.forEach(t=>m[t.id]=t);return m;}
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const money=n=>'$'+Number(n||0).toLocaleString();
 function softHex(hex){try{const h=hex.replace('#','');const r=parseInt(h.slice(0,2),16),g=parseInt(h.slice(2,4),16),b=parseInt(h.slice(4,6),16);const mix=c=>Math.round(c+(255-c)*.85);return'rgb('+mix(r)+','+mix(g)+','+mix(b)+')';}catch(e){return'#F1ECEA';}}
 
+function load(){
+  app.innerHTML='<div class="center"><div class="spin"></div><div style="margin-top:12px;font-size:13px">讀取中…</div></div>';
+  fetch(API_URL+(API_URL.indexOf('?')>=0?'&':'?')+'t='+Date.now()).then(r=>r.json()).then(j=>{
+    if(j&&j.ok){CFG=j.data; if(!sel&&CFG.openDays.length){sel=CFG.openDays[0].date+'|'+CFG.openDays[0].loc;} render();}
+    else showErr((j&&j.error)||'讀取失敗');
+  }).catch(()=>showErr('連線失敗，請確認 Apps Script 已部署為「所有人」可存取，且已更新到最新 Code.gs。'));
+}
+function showErr(msg){app.innerHTML='<div class="center"><div style="font-weight:600;color:var(--rose)">載入失敗</div><div style="font-size:12.5px;margin:8px 0 14px;max-width:320px;text-align:center">'+esc(msg)+'</div><button class="btn" onclick="load()">重新載入</button></div>';}
+function tMap(){const m={};CFG.teachers.forEach(t=>m[t.id]=t);return m;}
+function pendingList(){const seen={},out=[];(CFG.busy||[]).forEach(b=>{if(b.status==='待審核'&&!seen[b.code]){seen[b.code]=1;out.push(b);}});return out;}
+
 function render(){
-  const days=CFG.openDays;
-  if(!days.length){app.innerHTML='<div class="center">「開放日」分頁還沒有資料。</div>';return;}
+  const pend=pendingList();
+  let html='<div class="tabs">'
+    +'<button class="tab '+(view==='review'?'on':'')+'" onclick="setView(\'review\')">待審核'+(pend.length?'<span class="badge">'+pend.length+'</span>':'')+'</button>'
+    +'<button class="tab '+(view==='cal'?'on':'')+'" onclick="setView(\'cal\')">當日排程</button>'
+    +'</div>';
+  html += view==='review' ? renderReview(pend) : renderCal();
+  app.innerHTML=html;
+}
+function setView(v){view=v;render();}
+
+function renderReview(pend){
+  if(!pend.length) return '<div class="empty">目前沒有待審核的預約。<br>顧客送出後會出現在這裡。</div>';
+  const tm=tMap();
+  let h='';
+  pend.forEach(function(b){
+    const t=tm[b.teacherId]; const col=t?t.color:'#7A6470';
+    const isRedeem=(b.mode||'').indexOf('兌換')>=0;
+    const d=fmtDate(b.date);
+    h+='<div class="rcard" id="rc_'+esc(b.code)+'">'
+      +'<div class="rtop"><div><span class="rname">'+esc(b.name||'（未填名）')+'</span><span class="rphone">'+esc(b.phone||'')+'</span></div>'
+      +'<span class="rtag" style="background:'+(isRedeem?'#E7F1EC':'#F4E4DF')+';color:'+(isRedeem?'#3B7A5C':'#9B4B41')+'">'+esc(b.mode||'')+'</span></div>'
+      +'<div class="rmeta">'
+        +'<span><span class="k">療程</span> '+esc(b.svc||'')+'</span>'
+        +'<span><span class="k">老師</span> <span class="dotc" style="background:'+col+'"></span>'+esc(t?t.name:(b.teacherName||''))+'</span>'
+        +'<span><span class="k">時間</span> '+d.md+'（週'+d.w+'）'+m2s(b.start)+'–'+m2s(b.start+b.dur)+'</span>'
+        +'<span><span class="k">現場需收</span> '+money(b.pay)+'</span>'
+        +'<span><span class="k">編號</span> '+esc(b.code)+'</span>'
+      +'</div>'
+      +'<div class="rbtns">'
+        +'<button class="b ok" onclick="review(\''+esc(b.code)+'\',\'已確認\')">預約通過</button>'
+        +'<button class="b no" onclick="review(\''+esc(b.code)+'\',\'已取消\')">取消預約</button>'
+      +'</div></div>';
+  });
+  return h;
+}
+
+function review(code, status){
+  if(status==='已取消' && !confirm('確定取消這筆預約？\n系統會通知顧客並釋放此時段。')) return;
+  const card=document.getElementById('rc_'+code);
+  if(card){card.querySelectorAll('button').forEach(function(b){b.disabled=true;});
+    card.querySelector('.rbtns').innerHTML='<div style="flex:1;text-align:center;color:var(--soft);font-size:13px;padding:8px">處理中…</div>';}
+  fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'review',code:code,status:status})})
+    .then(r=>r.json()).then(j=>{ if(j&&j.ok){ load(); } else { alert('更新失敗：'+((j&&j.error)||'未知錯誤')); load(); } })
+    .catch(function(){ alert('連線失敗，請再試一次。'); load(); });
+}
+
+function renderCal(){
+  const days=CFG.openDays||[];
+  if(!days.length) return '<div class="empty">「開放日」分頁還沒有資料。</div>';
   let html='<div class="days">';
-  days.forEach(o=>{const key=o.date+'|'+o.loc;const on=key===sel;const d=fmtDate(o.date);
+  days.forEach(function(o){const key=o.date+'|'+o.loc;const on=key===sel;const d=fmtDate(o.date);
     html+='<button class="day '+(on?'on':'')+'" onclick="pick(\''+key+'\')"><span class="loc">◉ '+esc(o.loc)+'</span>'+d.md+'<br><span style="font-size:11px;opacity:.7">週'+d.w+'</span></button>';});
   html+='</div>';
-
-  const od=days.find(o=>o.date+'|'+o.loc===sel)||days[0];
+  const od=days.find(function(o){return o.date+'|'+o.loc===sel;})||days[0];
   const tm=tMap();
-  const teachers=od.teacherIds.map(id=>tm[id]).filter(Boolean);
-  const dayBusy=CFG.busy.filter(b=>b.date===od.date);
+  const teachers=od.teacherIds.map(function(id){return tm[id];}).filter(Boolean);
+  const dayBusy=(CFG.busy||[]).filter(function(b){return b.date===od.date;});
   const times=[];for(let t=od.open;t<od.close;t+=30)times.push(t);
   const d=fmtDate(od.date);
-
   html+='<div class="meta"><span class="t">◉ '+esc(od.loc)+'基地 · '+d.md+'（週'+d.w+'） '+m2s(od.open)+'–'+m2s(od.close)+'</span><span class="c">當日 '+dayBusy.length+' 筆</span></div>';
-
-  if(!teachers.length){html+='<div class="center">這天沒有排老師（開放日分頁填「當天老師」）。</div>';app.innerHTML=html;return;}
-
+  if(!teachers.length) return html+'<div class="empty">這天沒有排老師。</div>';
   html+='<div class="cal"><div class="scroll"><table><thead><tr><th class="tcol">時間</th>';
-  teachers.forEach(t=>{html+='<th><span class="dotc" style="background:'+esc(t.color)+'"></span>'+esc(t.name)+'</th>';});
+  teachers.forEach(function(t){html+='<th><span class="dotc" style="background:'+esc(t.color)+'"></span>'+esc(t.name)+'</th>';});
   html+='</tr></thead><tbody>';
-
-  const coveredUntil={};teachers.forEach(t=>coveredUntil[t.id]=od.open);
-  times.forEach(tt=>{
+  const cover={};teachers.forEach(function(t){cover[t.id]=od.open;});
+  times.forEach(function(tt){
     html+='<tr><td class="tcol">'+m2s(tt)+'</td>';
-    teachers.forEach(t=>{
-      if(coveredUntil[t.id]>tt) return; // 被上方 rowspan 蓋住，不輸出
-      const bk=dayBusy.find(b=>b.teacherId===t.id && b.start===tt);
+    teachers.forEach(function(t){
+      if(cover[t.id]>tt) return;
+      const bk=dayBusy.find(function(b){return b.teacherId===t.id&&b.start===tt;});
       if(bk){
-        const span=Math.max(1,Math.round(bk.dur/30));
-        coveredUntil[t.id]=tt+span*30;
+        const span=Math.max(1,Math.round(bk.dur/30));cover[t.id]=tt+span*30;
         const isRedeem=(bk.mode||'').indexOf('兌換')>=0;
+        const pend=bk.status==='待審核';
         html+='<td class="slot" rowspan="'+span+'" style="background:'+softHex(t.color)+'"><div class="bk" style="border-left-color:'+esc(t.color)+'">'
-          +'<div class="nm">'+esc(bk.name||'已約')+'</div>'
+          +'<div class="nm">'+esc(bk.name||'已約')+(pend?' ⏳':'')+'</div>'
           +'<div class="sv">'+esc(bk.svc||'')+' · '+m2s(bk.start)+'–'+m2s(bk.start+bk.dur)+'</div>'
-          +(bk.mode?'<span class="tg" style="background:'+(isRedeem?'#E7F1EC':'#F4E4DF')+';color:'+(isRedeem?'#3B7A5C':'#9B4B41')+'">'+esc(bk.mode)+'</span>':'')
+          +(bk.mode?'<span class="tg" style="background:'+(isRedeem?'#E7F1EC':'#F4E4DF')+';color:'+(isRedeem?'#3B7A5C':'#9B4B41')+'">'+esc(bk.status||bk.mode)+'</span>':'')
           +'</div></td>';
-      } else {
-        coveredUntil[t.id]=tt+30;
-        html+='<td class="slot free"></td>';
-      }
+      } else { cover[t.id]=tt+30; html+='<td class="slot free"></td>'; }
     });
     html+='</tr>';
   });
-  html+='</tbody></table></div></div>';
-  html+='<div style="font-size:11.5px;color:var(--soft);margin-top:10px">斜線＝空檔可約 · 色塊＝已約（顯示顧客與療程）。資料即時來自 Google 試算表「預約」分頁。</div>';
-  app.innerHTML=html;
+  html+='</tbody></table></div></div><div style="font-size:11.5px;color:var(--soft);margin-top:10px">⏳＝待審核 · 斜線＝空檔 · 資料即時來自 Google 試算表。</div>';
+  return html;
 }
 function pick(key){sel=key;render();}
 load();
