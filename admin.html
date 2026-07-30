@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>九大行星　後台（審核 · 排程）</title>
+<title>九大行星　後台</title>
 <style>
   :root{--bg:#FAF5F1;--card:#FFF;--ink:#3E2A38;--soft:#7A6470;--line:#EADFD8;--rose:#C67F72;--honey:#C99A4E;--ok:#5C9B7A}
   *{box-sizing:border-box;-webkit-text-size-adjust:100%}
@@ -13,7 +13,7 @@
   header .dot{width:20px;height:20px;border-radius:6px;background:linear-gradient(135deg,#8E6E9E,#C99A4E)}
   h1{font-size:17px;margin:0;letter-spacing:.5px}
   .sub{font-size:12.5px;color:var(--soft);margin:-2px 0 12px}
-  .tabs{display:flex;gap:6px;margin-bottom:14px}
+  .tabs{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
   .tab{border:1px solid var(--line);background:var(--card);color:var(--soft);border-radius:20px;padding:8px 15px;font-size:13px;font-weight:600;cursor:pointer}
   .tab.on{background:var(--ink);color:#fff;border-color:var(--ink)}
   .tab .badge{background:var(--rose);color:#fff;font-size:10px;border-radius:8px;padding:0 6px;margin-left:5px}
@@ -28,11 +28,17 @@
   .rtag{font-size:11px;border-radius:8px;padding:2px 8px;white-space:nowrap}
   .rmeta{font-size:13px;color:var(--ink);margin-top:7px;display:flex;flex-wrap:wrap;gap:4px 10px}
   .rmeta .k{color:var(--soft)}
-  .rbtns{display:flex;gap:8px;margin-top:12px}
-  .b{flex:1;border:none;border-radius:10px;padding:11px;font-weight:700;font-size:13.5px;cursor:pointer}
+  .rbtns{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+  .b{flex:1;min-width:96px;border:none;border-radius:10px;padding:11px;font-weight:700;font-size:13.5px;cursor:pointer}
   .b.ok{background:var(--ok);color:#fff}
   .b.no{background:#fff;color:var(--rose);border:1px solid var(--rose)}
+  .b.ed{background:#fff;color:var(--ink);border:1px solid var(--line)}
+  .b.save{background:var(--ink);color:#fff}
   .b:disabled{opacity:.5;cursor:default}
+  .edit{margin-top:12px;border-top:1px dashed var(--line);padding-top:12px;display:grid;gap:9px}
+  .fld{display:flex;flex-direction:column;gap:4px}
+  .fld label{font-size:11.5px;color:var(--soft);font-weight:600}
+  select,input.tin{border:1px solid var(--line);border-radius:9px;padding:9px 10px;font-size:13.5px;font-family:inherit;background:#fff;color:var(--ink)}
   .cal{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden}
   .scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
   table{border-collapse:collapse;width:100%;min-width:520px}
@@ -41,7 +47,7 @@
   .tcol{width:56px;min-width:56px;background:#F3EEEA;color:var(--soft);font-size:11.5px;text-align:center;font-weight:600}
   td.slot{height:34px;vertical-align:top}
   .free{background:repeating-linear-gradient(45deg,transparent,transparent 6px,#FBF7F4 6px,#FBF7F4 12px)}
-  .bk{padding:5px 7px;height:100%;border-left:3px solid var(--rose)}
+  .bk{padding:5px 7px;height:100%;border-left:3px solid var(--rose);cursor:pointer}
   .bk .nm{font-size:12.5px;font-weight:700;line-height:1.25}
   .bk .sv{font-size:11px;color:var(--soft);line-height:1.3;margin-top:1px}
   .bk .tg{display:inline-block;font-size:9.5px;font-weight:600;border-radius:4px;padding:0 4px;margin-top:2px}
@@ -58,13 +64,13 @@
 <body>
 <div class="wrap">
   <header><span class="dot"></span><h1>九大行星　後台</h1></header>
-  <div class="sub">後台管理專用 · 審核預約、查看每日排班</div>
+  <div class="sub">後台管理專用 · 審核、編輯預約、查看排班</div>
   <div id="app"><div class="center"><div class="spin"></div><div style="margin-top:12px;font-size:13px">讀取中…</div></div></div>
 </div>
 <script>
 const API_URL = "https://script.google.com/macros/s/AKfycbw6SdUrTOwtXfAy7xz77jjQf-Jjol9DBqTQhCYy5rvaywRHrOgEB3J3XbSK3DnUiUVWnw/exec";
 const app = document.getElementById('app');
-let CFG=null, view='review', sel=null;
+let CFG=null, view='review', sel=null, editing=null;
 
 const pad=n=>String(n).padStart(2,'0');
 const m2s=m=>pad(Math.floor(m/60))+':'+pad(m%60);
@@ -82,89 +88,144 @@ function load(){
 }
 function showErr(msg){app.innerHTML='<div class="center"><div style="font-weight:600;color:var(--rose)">載入失敗</div><div style="font-size:12.5px;margin:8px 0 14px;max-width:320px;text-align:center">'+esc(msg)+'</div><button class="btn" onclick="load()">重新載入</button></div>';}
 function tMap(){const m={};CFG.teachers.forEach(t=>m[t.id]=t);return m;}
-function pendingList(){const seen={},out=[];(CFG.busy||[]).forEach(b=>{if(b.status==='待審核'&&!seen[b.code]){seen[b.code]=1;out.push(b);}});return out;}
+function dedupe(filterFn){const seen={},out=[];(CFG.busy||[]).forEach(b=>{if((!filterFn||filterFn(b))&&!seen[b.code]){seen[b.code]=1;out.push(b);}});return out;}
+function svcRequires(name){const s=(CFG.services||[]).find(x=>x.name===name);return s?s.requires:[];}
+function nrm(x){return String(x==null?'':x).trim();}
 
 function render(){
-  const pend=pendingList();
+  const pend=dedupe(b=>b.status==='待審核');
   let html='<div class="tabs">'
     +'<button class="tab '+(view==='review'?'on':'')+'" onclick="setView(\'review\')">待審核'+(pend.length?'<span class="badge">'+pend.length+'</span>':'')+'</button>'
+    +'<button class="tab '+(view==='manage'?'on':'')+'" onclick="setView(\'manage\')">預約管理</button>'
     +'<button class="tab '+(view==='cal'?'on':'')+'" onclick="setView(\'cal\')">當日排程</button>'
     +'</div>';
-  html += view==='review' ? renderReview(pend) : renderCal();
+  html += view==='review' ? renderReview(pend) : view==='manage' ? renderManage() : renderCal();
   app.innerHTML=html;
 }
-function setView(v){view=v;render();}
+function setView(v){view=v;editing=null;render();}
+
+function card(b,opts){
+  const tm=tMap(); const t=tm[b.teacherId]; const col=t?t.color:'#7A6470';
+  const isRedeem=(b.mode||'').indexOf('兌換')>=0; const d=fmtDate(b.date);
+  const stColor=b.status==='待審核'?'#9B7B2E':(b.status==='已確認'?'#3B7A5C':'#9B4B41');
+  const stBg=b.status==='待審核'?'#F6EBD4':(b.status==='已確認'?'#E7F1EC':'#F4E4DF');
+  let h='<div class="rcard" id="rc_'+esc(b.code)+'">'
+    +'<div class="rtop"><div><span class="rname">'+esc(b.name||'（未填名）')+'</span><span class="rphone">'+esc(b.phone||'')+'</span></div>'
+    +'<span class="rtag" style="background:'+stBg+';color:'+stColor+'">'+esc(b.status||'')+'</span></div>'
+    +'<div class="rmeta">'
+      +'<span><span class="k">療程</span> '+esc(b.svc||'')+'</span>'
+      +'<span><span class="k">老師</span> <span class="dotc" style="background:'+col+'"></span>'+esc(t?t.name:(b.teacherName||''))+'</span>'
+      +'<span><span class="k">時間</span> '+d.md+'（週'+d.w+'）'+m2s(b.start)+'–'+m2s(b.start+b.dur)+'</span>'
+      +'<span><span class="k">現場需收</span> '+money(b.pay)+'</span>'
+      +(b.mode?'<span><span class="k">方式</span> '+esc(b.mode)+'</span>':'')
+      +'<span><span class="k">編號</span> '+esc(b.code)+'</span>'
+      +(b.note?'<span><span class="k">備註</span> '+esc(b.note)+'</span>':'')
+    +'</div>';
+  if(editing===b.code){ h+=editForm(b); }
+  else {
+    h+='<div class="rbtns">';
+    if(b.status==='待審核') h+='<button class="b ok" onclick="review(\''+esc(b.code)+'\',\'已確認\')">預約通過</button>';
+    if(opts&&opts.edit) h+='<button class="b ed" onclick="startEdit(\''+esc(b.code)+'\')">編輯</button>';
+    h+='<button class="b no" onclick="review(\''+esc(b.code)+'\',\'已取消\')">取消預約</button>';
+    h+='</div>';
+  }
+  return h+'</div>';
+}
 
 function renderReview(pend){
   if(!pend.length) return '<div class="empty">目前沒有待審核的預約。<br>顧客送出後會出現在這裡。</div>';
-  const tm=tMap();
-  let h='';
-  pend.forEach(function(b){
-    const t=tm[b.teacherId]; const col=t?t.color:'#7A6470';
-    const isRedeem=(b.mode||'').indexOf('兌換')>=0;
-    const d=fmtDate(b.date);
-    h+='<div class="rcard" id="rc_'+esc(b.code)+'">'
-      +'<div class="rtop"><div><span class="rname">'+esc(b.name||'（未填名）')+'</span><span class="rphone">'+esc(b.phone||'')+'</span></div>'
-      +'<span class="rtag" style="background:'+(isRedeem?'#E7F1EC':'#F4E4DF')+';color:'+(isRedeem?'#3B7A5C':'#9B4B41')+'">'+esc(b.mode||'')+'</span></div>'
-      +'<div class="rmeta">'
-        +'<span><span class="k">療程</span> '+esc(b.svc||'')+'</span>'
-        +'<span><span class="k">老師</span> <span class="dotc" style="background:'+col+'"></span>'+esc(t?t.name:(b.teacherName||''))+'</span>'
-        +'<span><span class="k">時間</span> '+d.md+'（週'+d.w+'）'+m2s(b.start)+'–'+m2s(b.start+b.dur)+'</span>'
-        +'<span><span class="k">現場需收</span> '+money(b.pay)+'</span>'
-        +'<span><span class="k">編號</span> '+esc(b.code)+'</span>'
-      +'</div>'
-      +'<div class="rbtns">'
-        +'<button class="b ok" onclick="review(\''+esc(b.code)+'\',\'已確認\')">預約通過</button>'
-        +'<button class="b no" onclick="review(\''+esc(b.code)+'\',\'已取消\')">取消預約</button>'
-      +'</div></div>';
-  });
-  return h;
+  return pend.map(b=>card(b,{edit:false})).join('');
+}
+function renderManage(){
+  const all=dedupe(null);
+  if(!all.length) return '<div class="empty">目前沒有預約。</div>';
+  return '<div style="font-size:12px;color:var(--soft);margin-bottom:10px">可編輯每筆的日期／時間／老師／備註，或直接取消（會通知顧客並釋放時段）。整骨等附加段會隨主療程一起移動。</div>'
+    + all.map(b=>card(b,{edit:true})).join('');
+}
+
+function editForm(b){
+  const day=(editing_draft.date)||b.date;
+  const od=(CFG.openDays||[]).find(o=>o.date===day)|| (CFG.openDays||[])[0];
+  const times=[]; if(od){for(let t=od.open;t<od.close;t+=30)times.push(t);}
+  const reqs=svcRequires(b.svc);
+  const dayTeachers=(od?od.teacherIds:[]).map(id=>tMap()[id]).filter(Boolean)
+      .filter(t=>reqs.length===0||reqs.every(r=>t.skills.map(nrm).includes(nrm(r))));
+  const curTeacher=editing_draft.teacherName!=null?editing_draft.teacherName:b.teacherName;
+  const curStart=editing_draft.start!=null?editing_draft.start:b.start;
+  const curNote=editing_draft.note!=null?editing_draft.note:(b.note||'');
+  let h='<div class="edit">';
+  h+='<div class="fld"><label>日期</label><select onchange="ed(\'date\',this.value)">'
+    +(CFG.openDays||[]).map(o=>'<option value="'+o.date+'" '+(o.date===day?'selected':'')+'>'+esc(o.loc)+' '+fmtDate(o.date).md+'（週'+fmtDate(o.date).w+'）</option>').join('')
+    +'</select></div>';
+  h+='<div class="fld"><label>開始時間</label><select onchange="ed(\'start\',parseInt(this.value))">'
+    +times.map(tm=>'<option value="'+tm+'" '+(tm===curStart?'selected':'')+'>'+m2s(tm)+'</option>').join('')
+    +'</select></div>';
+  h+='<div class="fld"><label>主療程老師</label><select onchange="ed(\'teacherName\',this.value)">'
+    +(dayTeachers.length?dayTeachers:[{name:curTeacher}]).map(t=>'<option value="'+esc(t.name)+'" '+(t.name===curTeacher?'selected':'')+'>'+esc(t.name)+'</option>').join('')
+    +'</select></div>';
+  h+='<div class="fld"><label>備註</label><input class="tin" value="'+esc(curNote)+'" oninput="ed(\'note\',this.value)"></div>';
+  h+='<div class="rbtns"><button class="b save" onclick="saveEdit(\''+esc(b.code)+'\')">儲存變更</button><button class="b ed" onclick="cancelEdit()">放棄</button></div>';
+  return h+'</div>';
+}
+
+let editing_draft={};
+function startEdit(code){ editing=code; editing_draft={}; render(); }
+function cancelEdit(){ editing=null; editing_draft={}; render(); }
+function ed(field,val){ editing_draft[field]=val; if(field==='date'){ editing_draft.start=undefined; editing_draft.teacherName=undefined; } render(); }
+
+function saveEdit(code){
+  const all=dedupe(null); const b=all.find(x=>x.code===code); if(!b) return;
+  const payload={action:'edit',code:code,
+    date: editing_draft.date||b.date,
+    start: m2s(editing_draft.start!=null?editing_draft.start:b.start),
+    teacherName: editing_draft.teacherName!=null?editing_draft.teacherName:b.teacherName,
+    note: editing_draft.note!=null?editing_draft.note:(b.note||'')};
+  const cardEl=document.getElementById('rc_'+code);
+  if(cardEl){cardEl.querySelectorAll('button,select,input').forEach(el=>el.disabled=true);}
+  fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)})
+    .then(r=>r.json()).then(j=>{ if(j&&j.ok){ editing=null; editing_draft={}; load(); } else { alert('儲存失敗：'+((j&&j.error)||'未知錯誤')); load(); } })
+    .catch(()=>{ alert('連線失敗，請再試一次。'); load(); });
 }
 
 function review(code, status){
   if(status==='已取消' && !confirm('確定取消這筆預約？\n系統會通知顧客並釋放此時段。')) return;
-  const card=document.getElementById('rc_'+code);
-  if(card){card.querySelectorAll('button').forEach(function(b){b.disabled=true;});
-    card.querySelector('.rbtns').innerHTML='<div style="flex:1;text-align:center;color:var(--soft);font-size:13px;padding:8px">處理中…</div>';}
+  const cardEl=document.getElementById('rc_'+code);
+  if(cardEl){cardEl.querySelectorAll('button').forEach(b=>b.disabled=true);}
   fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'review',code:code,status:status})})
     .then(r=>r.json()).then(j=>{
-        if(j&&j.ok){
-          if(!j.notified){ alert((status==='已確認'?'已通過':'已取消')+'。\n這位顧客沒有留 Email，系統無法自動通知，請自行以電話／LINE 告知。'); }
-          load();
-        } else { alert('更新失敗：'+((j&&j.error)||'未知錯誤')); load(); }
-      })
-    .catch(function(){ alert('連線失敗，請再試一次。'); load(); });
+        if(j&&j.ok){ if(!j.notified){ alert((status==='已確認'?'已通過':'已取消')+'。\n這位顧客沒有留 Email，系統無法自動通知，請自行以電話／LINE 告知。'); } load(); }
+        else { alert('更新失敗：'+((j&&j.error)||'未知錯誤')); load(); }
+      }).catch(()=>{ alert('連線失敗，請再試一次。'); load(); });
 }
 
 function renderCal(){
   const days=CFG.openDays||[];
   if(!days.length) return '<div class="empty">「開放日」分頁還沒有資料。</div>';
   let html='<div class="days">';
-  days.forEach(function(o){const key=o.date+'|'+o.loc;const on=key===sel;const d=fmtDate(o.date);
+  days.forEach(o=>{const key=o.date+'|'+o.loc;const on=key===sel;const d=fmtDate(o.date);
     html+='<button class="day '+(on?'on':'')+'" onclick="pick(\''+key+'\')"><span class="loc">◉ '+esc(o.loc)+'</span>'+d.md+'<br><span style="font-size:11px;opacity:.7">週'+d.w+'</span></button>';});
   html+='</div>';
-  const od=days.find(function(o){return o.date+'|'+o.loc===sel;})||days[0];
+  const od=days.find(o=>o.date+'|'+o.loc===sel)||days[0];
   const tm=tMap();
-  const teachers=od.teacherIds.map(function(id){return tm[id];}).filter(Boolean);
-  const dayBusy=(CFG.busy||[]).filter(function(b){return b.date===od.date;});
+  const teachers=od.teacherIds.map(id=>tm[id]).filter(Boolean);
+  const dayBusy=(CFG.busy||[]).filter(b=>b.date===od.date);
   const times=[];for(let t=od.open;t<od.close;t+=30)times.push(t);
   const d=fmtDate(od.date);
   html+='<div class="meta"><span class="t">◉ '+esc(od.loc)+'基地 · '+d.md+'（週'+d.w+'） '+m2s(od.open)+'–'+m2s(od.close)+'</span><span class="c">當日 '+dayBusy.length+' 筆</span></div>';
   if(!teachers.length) return html+'<div class="empty">這天沒有排老師。</div>';
   html+='<div class="cal"><div class="scroll"><table><thead><tr><th class="tcol">時間</th>';
-  teachers.forEach(function(t){html+='<th><span class="dotc" style="background:'+esc(t.color)+'"></span>'+esc(t.name)+'</th>';});
+  teachers.forEach(t=>{html+='<th><span class="dotc" style="background:'+esc(t.color)+'"></span>'+esc(t.name)+'</th>';});
   html+='</tr></thead><tbody>';
-  const cover={};teachers.forEach(function(t){cover[t.id]=od.open;});
-  times.forEach(function(tt){
+  const cover={};teachers.forEach(t=>cover[t.id]=od.open);
+  times.forEach(tt=>{
     html+='<tr><td class="tcol">'+m2s(tt)+'</td>';
-    teachers.forEach(function(t){
+    teachers.forEach(t=>{
       if(cover[t.id]>tt) return;
-      const bk=dayBusy.find(function(b){return b.teacherId===t.id&&b.start===tt;});
+      const bk=dayBusy.find(b=>b.teacherId===t.id&&b.start===tt);
       if(bk){
         const span=Math.max(1,Math.round(bk.dur/30));cover[t.id]=tt+span*30;
-        const isRedeem=(bk.mode||'').indexOf('兌換')>=0;
-        const pend=bk.status==='待審核';
-        html+='<td class="slot" rowspan="'+span+'" style="background:'+softHex(t.color)+'"><div class="bk" style="border-left-color:'+esc(t.color)+'">'
+        const isRedeem=(bk.mode||'').indexOf('兌換')>=0; const pend=bk.status==='待審核';
+        html+='<td class="slot" rowspan="'+span+'" style="background:'+softHex(t.color)+'"><div class="bk" style="border-left-color:'+esc(t.color)+'" title="點我編輯這筆" onclick="goEdit(\''+esc(bk.code)+'\')">'
           +'<div class="nm">'+esc(bk.name||'已約')+(pend?' ⏳':'')+'</div>'
           +'<div class="sv">'+esc(bk.svc||'')+' · '+m2s(bk.start)+'–'+m2s(bk.start+bk.dur)+'</div>'
           +(bk.mode?'<span class="tg" style="background:'+(isRedeem?'#E7F1EC':'#F4E4DF')+';color:'+(isRedeem?'#3B7A5C':'#9B4B41')+'">'+esc(bk.status||bk.mode)+'</span>':'')
@@ -176,6 +237,7 @@ function renderCal(){
   html+='</tbody></table></div></div><div style="font-size:11.5px;color:var(--soft);margin-top:10px">⏳＝待審核 · 斜線＝空檔 · 資料即時來自 Google 試算表。</div>';
   return html;
 }
+function goEdit(code){ view='manage'; editing=code; editing_draft={}; window.scrollTo({top:0,behavior:'smooth'}); render(); }
 function pick(key){sel=key;render();}
 load();
 </script>
