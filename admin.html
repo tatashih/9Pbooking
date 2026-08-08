@@ -211,7 +211,7 @@ function renderCal(){
   const dayBusy=(CFG.busy||[]).filter(b=>b.date===od.date);
   const times=[];for(let t=od.open;t<od.close;t+=30)times.push(t);
   const d=fmtDate(od.date);
-  html+='<div class="meta"><span class="t">◉ '+esc(od.loc)+'基地 · '+d.md+'（週'+d.w+'） '+m2s(od.open)+'–'+m2s(od.close)+'</span><span class="c">當日 '+dayBusy.length+' 筆</span></div>';
+  html+='<div class="meta"><span class="t">◉ '+esc(od.loc)+'門市 · '+d.md+'（週'+d.w+'） '+m2s(od.open)+'–'+m2s(od.close)+'</span><span class="c">當日 '+dayBusy.length+' 筆</span></div>';
   if(!teachers.length) return html+'<div class="empty">這天沒有排老師。</div>';
   html+='<div class="cal"><div class="scroll"><table><thead><tr><th class="tcol">時間</th>';
   teachers.forEach(t=>{html+='<th><span class="dotc" style="background:'+esc(t.color)+'"></span>'+esc(t.name)+'</th>';});
