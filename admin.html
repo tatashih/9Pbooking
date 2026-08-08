@@ -81,7 +81,7 @@ function softHex(hex){try{const h=hex.replace('#','');const r=parseInt(h.slice(0
 
 function load(){
   app.innerHTML='<div class="center"><div class="spin"></div><div style="margin-top:12px;font-size:13px">讀取中…</div></div>';
-  fetch(API_URL+(API_URL.indexOf('?')>=0?'&':'?')+'t='+Date.now()).then(r=>r.json()).then(j=>{
+  fetch(API_URL+(API_URL.indexOf('?')>=0?'&':'?')+'t='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{
     if(j&&j.ok){CFG=j.data; if(!sel&&CFG.openDays.length){sel=CFG.openDays[0].date+'|'+CFG.openDays[0].loc;} render();}
     else showErr((j&&j.error)||'讀取失敗');
   }).catch(()=>showErr('連線失敗，請確認 Apps Script 已部署為「所有人」可存取，且已更新到最新 Code.gs。'));
